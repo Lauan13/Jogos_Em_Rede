@@ -5,14 +5,12 @@ public class Queen : ChessPiece
 {
     public override List<Vector2Int> GetAvailableMoves(
         ChessPiece[,] board,
-        int tileCountX,
-        int tileCountY
-    )
+        int boardSizeX,
+        int boardSizeY)
     {
-        List<Vector2Int> moves =
-            new List<Vector2Int>();
+        List<Vector2Int> moves = new List<Vector2Int>();
 
-        Vector2Int[] dirs =
+        Vector2Int[] directions =
         {
             Vector2Int.up,
             Vector2Int.down,
@@ -25,18 +23,16 @@ public class Queen : ChessPiece
             new Vector2Int(-1,-1)
         };
 
-        foreach (Vector2Int dir in dirs)
+        foreach (var dir in directions)
         {
             for (int i = 1; i < 8; i++)
             {
-                Vector2Int target =
-                    boardPosition + dir * i;
+                Vector2Int target = boardPosition + dir * i;
 
-                if (!IsInsideBoard(target))
+                if (!IsInsideBoard(target, boardSizeX, boardSizeY))
                     break;
 
-                ChessPiece piece =
-                    board[target.x, target.y];
+                ChessPiece piece = board[target.x, target.y];
 
                 if (piece == null)
                 {

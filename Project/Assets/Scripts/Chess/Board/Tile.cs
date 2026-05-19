@@ -2,15 +2,30 @@ using UnityEngine;
 
 public class Tile : MonoBehaviour
 {
-    public Renderer rend;
+    public Vector2Int boardPosition;
 
-    public void Highlight(Color color)
+    private SpriteRenderer sr;
+
+    public Color normalColor;
+    public Color highlightColor;
+
+    private void Awake()
     {
-        rend.material.color = color;
+        sr = GetComponent<SpriteRenderer>();
     }
 
-    public void ResetColor(Color original)
+    public void SetColor(Color color)
     {
-        rend.material.color = original;
+        sr.color = color;
+    }
+
+    public void Highlight()
+    {
+        sr.color = highlightColor;
+    }
+
+    public void ResetColor()
+    {
+        sr.color = normalColor;
     }
 }
