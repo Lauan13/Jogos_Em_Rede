@@ -2,76 +2,48 @@
 
 namespace JogosEmRede
 {
-    // Comportamento do pinguim central.
-    // Regras:
-    // - No Start(), posiciona automaticamente na posição do bloco central (3,3).
-    // - Monitora a existência do bloco central; se ele sumir, o pinguim "cai" e loga qual jogador perdeu.
+    /// <summary>
+    /// Controla o comportamento do pinguim quando ele perde o suporte do gelo.
+    /// </summary>
     public class Pinguim : MonoBehaviour
     {
-        // Coordenadas centrais fixas na grade 7x7
-        private int centerX = 3;
-        private int centerY = 3;
-
-        // Flag para garantir que a lógica de queda execute apenas uma vez
+        private Rigidbody2D rb;
         private bool caiu = false;
 
         void Start()
         {
-            // Posiciona o pinguim no centro do tabuleiro, se possível
-            if (GeradorDeTabuleiro.Instance == null)
+            // Tenta pegar o Rigidbody2D do pinguim
+            rb = GetComponent<Rigidbody2D>();
+            
+            // Garante que ele comece parado (sem cair sozinho no início)
+            if (rb != null)
             {
-                Debug.LogWarning("GeradorDeTabuleiro.Instance não encontrado. Pinguim não foi posicionado no centro.");
-                return;
-            }
-
-            GameObject blocoCentral = GeradorDeTabuleiro.Instance.GetBlock(centerX, centerY);
-            if (blocoCentral != null)
-            {
-                transform.position = blocoCentral.transform.position;
-            }
-            else
-            {
-                Debug.LogWarning("Bloco central (3,3) não encontrado no Start() ao posicionar pinguim.");
+                rb.bodyType = RigidbodyType2D.Kinematic;
             }
         }
 
-        void Update()
+        /// <summary>
+        /// Ativa a gravidade real para o pinguim despencar da tela.
+        /// </summary>
+        public void Desabar()
         {
-            if (caiu)
-                return;
-
-            if (GeradorDeTabuleiro.Instance == null)
-                return;
-
-            // Se o bloco central sumiu, o pinguim deve cair
-            if (GeradorDeTabuleiro.Instance.GetBlock(centerX, centerY) == null)
-            {
-                Caiu();
-            }
-        }
-
-        // Lógica que acontece quando o pinguim cai
-        void Caiu()
-        {
+            if (caiu) return;
             caiu = true;
 
-            int jogadorPerdedor = 0;
-            if (GeradorDeTabuleiro.Instance != null)
-            {
-                jogadorPerdedor = GeradorDeTabuleiro.Instance.turnoAtual;
-            }
+            Debug.Log("[Pinguim] Socorro! Estou caindo!");
 
-            if (jogadorPerdedor == 0)
+            if (rb != null)
             {
-                Debug.Log("Pinguim caiu! Não foi possível determinar o jogador que perdeu.");
+                // Muda para Dynamic para a gravidade da Unity puxá-lo para baixo
+                rb.bodyType = RigidbodyType2D.Dynamic;
             }
-            else
-            {
-                Debug.Log($"Pinguim caiu! Jogador {jogadorPerdedor} perdeu o jogo!");
-            }
+            
+            // Opcional: Desativa o colisor para ele não trombar em nada enquanto cai
+            Collider2D col = GetComponent<Collider2D>();
+            if (col != null) col.enabled = false;
 
-            // Aqui você pode adicionar animações, efeitos e lógica de fim de jogo.
+            // Destrói o objeto do pinguim após 2 segundos de queda para limpar a memória
+            Destroy(gameObject, 2f);
         }
     }
 }
-
