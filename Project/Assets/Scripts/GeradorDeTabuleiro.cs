@@ -4,8 +4,8 @@ using System.Collections.Generic;
 namespace JogosEmRede
 {
     /// <summary>
-    /// Gera e controla a grade 7x7 de blocos de gelo, controla turnos e verifica estabilidade.
-    /// Usa BFS para determinar quais blocos estão conectados de forma estável.
+    /// Controla a grade de blocos de gelo, turnos e estabilidade física real.
+    /// Remove ilhas flutuantes e blocos solitários sem suporte lateral.
     /// </summary>
     public class GeradorDeTabuleiro : MonoBehaviour
     {
@@ -100,7 +100,6 @@ namespace JogosEmRede
                 Debug.Log($"[Bloco Destruído] Bloco em ({x}, {y}) removido da grade.");
             }
 
-            // Dispara a checagem correta de estabilidade
             ChecarEstabilidade();
 
             if (grade[centerX, centerY] == null)
@@ -110,8 +109,7 @@ namespace JogosEmRede
         }
 
         /// <summary>
-        /// Nova lógica baseada no brinquedo real: Se o bloco perder conexão com a estrutura 
-        /// conectada ao bloco central (do pinguim), ele cai!
+        /// Valida a estabilidade baseada em conexões centrais e suporte lateral contra blocos solitários.
         /// </summary>
         public void ChecarEstabilidade()
         {
@@ -122,17 +120,13 @@ namespace JogosEmRede
 
             try
             {
-                // Se o bloco central já foi destruído, o jogo acabou, não precisa checar
                 if (grade[centerX, centerY] == null)
                     return;
 
-                // Matriz para registrar quem está conectado à estrutura estável do pinguim
+                // --- PASSO 1: FLOOD FILL A PARTIR DO CENTRO ---
                 bool[,] conectadoAoCentro = new bool[colunas, linhas];
-                
-                // Fila para realizar a busca em largura (BFS) a partir do centro
                 Queue<Vector2Int> fila = new Queue<Vector2Int>();
 
-                // Começamos a varredura a partir do bloco central do pinguim
                 Vector2Int centro = new Vector2Int(centerX, centerY);
                 fila.Enqueue(centro);
                 conectadoAoCentro[centerX, centerY] = true;
@@ -140,7 +134,6 @@ namespace JogosEmRede
                 int[] dx = { 1, -1, 0, 0 };
                 int[] dy = { 0, 0, 1, -1 };
 
-                // Passo 1: Descobre todos os blocos que ainda têm ligação física com o centro
                 while (fila.Count > 0)
                 {
                     Vector2Int atual = fila.Dequeue();
@@ -152,7 +145,6 @@ namespace JogosEmRede
 
                         if (nx >= 0 && nx < colunas && ny >= 0 && ny < linhas)
                         {
-                            // Se existe um bloco ali e ele ainda não foi mapeado
                             if (grade[nx, ny] != null && !conectadoAoCentro[nx, ny])
                             {
                                 conectadoAoCentro[nx, ny] = true;
@@ -162,25 +154,47 @@ namespace JogosEmRede
                     }
                 }
 
-                // Passo 2: Qualquer bloco que ficou de fora da lista de conexões do centro cai!
+                // --- PASSO 2: FILTRAR BLOCOS SEM SUPORTE LATERAL (COLUNAS ISOLADAS) ---
                 List<Vector2Int> blocosParaDestruir = new List<Vector2Int>();
 
                 for (int x = 0; x < colunas; x++)
                 {
                     for (int y = 0; y < linhas; y++)
                     {
-                        // Se existe o bloco, mas ele não tem conexão com a estrutura do pinguim
-                        if (grade[x, y] != null && !conectadoAoCentro[x, y])
+                        if (grade[x, y] == null) continue;
+
+                        // Se já falhou no teste de conexão com o centro, cai direto
+                        if (!conectadoAoCentro[x, y])
                         {
                             blocosParaDestruir.Add(new Vector2Int(x, y));
+                            continue;
+                        }
+
+                        // Não derruba o bloco central por regras de suporte lateral
+                        if (x == centerX && y == centerY) continue;
+
+                        // Checa se o bloco está exposto no topo (não há bloco imediatamente acima dele)
+                        bool topoLivre = (y == linhas - 1) || (grade[x, y + 1] == null);
+
+                        if (topoLivre)
+                        {
+                            // Verifica se possui vizinhos imediatos na esquerda ou direita
+                            bool temVizinhoEsquerda = (x > 0) && (grade[x - 1, y] != null);
+                            bool temVizinhoDireita = (x < colunas - 1) && (grade[x + 1, y] != null);
+
+                            // Se for um bloco solitário saliente (sem vizinho na esquerda E na direita)
+                            if (!temVizinhoEsquerda && !temVizinhoDireita)
+                            {
+                                blocosParaDestruir.Add(new Vector2Int(x, y));
+                            }
                         }
                     }
                 }
 
-                // Passo 3: Destruição dos blocos órfãos (ilhas isoladas)
+                // --- PASSO 3: REMOÇÃO DOS BLOCOS INSTÁVEIS ---
                 if (blocosParaDestruir.Count > 0)
                 {
-                    Debug.Log($"[Física Real] Destruindo {blocosParaDestruir.Count} blocos que ficaram flutuando isolados.");
+                    Debug.Log($"[Física Brinquedo] Derrubando {blocosParaDestruir.Count} blocos por instabilidade ou falta de suporte lateral.");
                     foreach (var coord in blocosParaDestruir)
                     {
                         GameObject go = grade[coord.x, coord.y];
@@ -191,6 +205,11 @@ namespace JogosEmRede
                             Destroy(go);
                         }
                     }
+
+                    // Executa uma nova checagem recursiva caso a queda desses blocos tenha gerado novas pontas soltas
+                    emVerificacao = false;
+                    ChecarEstabilidade();
+                    return;
                 }
             }
             finally
