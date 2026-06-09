@@ -17,6 +17,8 @@ namespace JogosEmRede
         private int linhas = 7;
 
         public float espacamento = 1f;
+        
+        public int forcaDoTurnoAtual;
 
         private GameObject[,] grade;
 
@@ -84,7 +86,8 @@ namespace JogosEmRede
         public void AlternarTurno()
         {
             turnoAtual = (turnoAtual == 1) ? 2 : 1;
-            Debug.Log($"[Turno] Agora é o turno do Jogador {turnoAtual}.");
+            forcaDoTurnoAtual = Random.Range(1, 5);
+            Debug.Log($"[Turno] Agora é o turno do Jogador {turnoAtual}. Força: {forcaDoTurnoAtual}");
             OnTurnoAlterado?.Invoke(turnoAtual);
         }
 

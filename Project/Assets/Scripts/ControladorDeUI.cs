@@ -26,6 +26,11 @@ namespace JogosEmRede
             {
                 GeradorDeTabuleiro.Instance.OnTurnoAlterado += AtualizarTextoTurno;
                 GeradorDeTabuleiro.Instance.OnGameOver += MostrarTelaDeVitoria;
+
+                // AJUSTE INICIAL: Sorteia a força do primeiro turno assim que o jogo começa
+                GeradorDeTabuleiro.Instance.forcaDoTurnoAtual = Random.Range(1, 5);
+                // Força a UI a mostrar os dados certos do Jogador 1 logo no início
+                AtualizarTextoTurno(GeradorDeTabuleiro.Instance.turnoAtual);
             }
         }
 
@@ -39,12 +44,15 @@ namespace JogosEmRede
             }
         }
 
-        // Atualiza o texto normal de quem está jogando
+        // --- MODIFICAÇÃO AQUI: Mostra o turno E a força sorteada ---
         private void AtualizarTextoTurno(int turno)
         {
-            if (textoTurno != null)
+            if (textoTurno != null && GeradorDeTabuleiro.Instance != null)
             {
-                textoTurno.text = $"Vez do Jogador {turno}";
+                int forca = GeradorDeTabuleiro.Instance.forcaDoTurnoAtual;
+                
+                // \n pula para a linha de baixo para o texto não ficar gigante pro lado
+                textoTurno.text = $"Vez do Jogador {turno}\nForça do Golpe: {forca}";
             }
         }
 

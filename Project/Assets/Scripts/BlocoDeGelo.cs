@@ -44,7 +44,8 @@ namespace JogosEmRede
             // Avança para a próxima batida/rachadura
             batidasAtuais += dano;
 
-            // Se ainda não estourou o limite de imagens, troca o visual
+            // CORREÇÃO: Se o dano foi 4, batidasAtuais vai direto para 4. 
+            // Se spritesRachadura.Length for 4, precisamos quebrar o bloco imediatamente!
             if (batidasAtuais < spritesRachadura.Length)
             {
                 spriteRenderer.sprite = spritesRachadura[batidasAtuais];
@@ -52,16 +53,12 @@ namespace JogosEmRede
             }
             else
             {
-                // Se passou da última imagem, o bloco quebra de verdade!
+                // Se o dano atingiu ou passou do limite de sprites, o bloco quebra!
                 QuebrarBloco();
             }
         }
 
-        private void OnMouseDown()
-        {
-            // Chama o método público de dano
-            ReceberDano(1);
-        }
+        // CORREÇÃO: Removeu-se o método OnMouseDown() antigo que causava conflitos de clique duplicado!
 
         private void QuebrarBloco()
         {
@@ -71,7 +68,8 @@ namespace JogosEmRede
             if (GeradorDeTabuleiro.Instance != null)
             {
                 GeradorDeTabuleiro.Instance.ReportBlockDestroyed(gridX, gridY);
-                GeradorDeTabuleiro.Instance.AlternarTurno();
+                // CORREÇÃO: Removeu-se o AlternarTurno() daqui de dentro! 
+                // Quem cuida de passar o turno agora é APENAS o ControleDeClique.
             }
 
             // Remove o objeto do jogo

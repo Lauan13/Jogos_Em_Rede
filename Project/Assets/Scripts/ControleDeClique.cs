@@ -5,12 +5,19 @@ using UnityEngine.InputSystem;
 namespace JogosEmRede
 {
     // Detecta cliques do jogador sobre blocos de gelo usando o novo Input System
-    // e aplica dano/alternância de turno.
-    // Observação: cada bloco precisa ter um Collider2D para ser detectado por Physics2D.
+    // e possui uma trava de segurança para evitar cliques duplos/fantasmas em blocos destruídos.
     public class ControleDeClique : MonoBehaviour
     {
+        [Header("Segurança")]
+        [SerializeField] private float tempoDeEsperaEntreCliques = 0.3f; // 300 milissegundos de trava
+        private float proximoCliquePermitido = 0f;
+
         void Update()
         {
+            // TRAVA DE SEGURANÇA: Se o jogo estiver processando muito rápido, ignora o clique
+            if (Time.time < proximoCliquePermitido)
+                return;
+
             // 1) Detecta clique com o botão esquerdo usando o novo Input System
             if (Mouse.current == null)
                 return; // sem dispositivo de mouse disponível
@@ -34,10 +41,9 @@ namespace JogosEmRede
             Vector2 mouseWorld2 = new Vector2(mouseWorld3.x, mouseWorld3.y);
 
             // 3) Dispara um Raycast 2D na posição do mouse.
-            // Em 2D, para detecção pontual usamos OverlapPoint como fallback.
             RaycastHit2D hit = Physics2D.Raycast(mouseWorld2, Vector2.zero);
 
-            // Fallback: se Raycast não encontrou nada, tente OverlapPoint (mais confiável para cliques pontuais)
+            // Fallback: se Raycast não encontrou nada, tente OverlapPoint
             Collider2D hitCollider = hit.collider != null ? hit.collider : Physics2D.OverlapPoint(mouseWorld2);
 
             if (hitCollider == null)
@@ -55,10 +61,18 @@ namespace JogosEmRede
                 return;
             }
 
-            // Aplica 1 ponto de dano
-            bloco.ReceberDano(1);
+            // --- ATIVA A TRAVA DE TEMPO ---
+            // Diz para o script ignorar qualquer clique nos próximos 0.3 segundos
+            proximoCliquePermitido = Time.time + tempoDeEsperaEntreCliques;
 
-            // Alterna o turno após a jogada (checa se o singleton existe)
+            // 5) BUSCA A FORÇA SORTEADA DO TURNO ATUAL
+            int forcaAplicada = 1;
+            if (GeradorDeTabuleiro.Instance != null)
+            {
+                forcaAplicada = GeradorDeTabuleiro.Instance.forcaDoTurnoAtual;
+            }
+
+            // 6) ALTERNA O TURNO PRIMEIRO
             if (GeradorDeTabuleiro.Instance != null)
             {
                 GeradorDeTabuleiro.Instance.AlternarTurno();
@@ -67,8 +81,9 @@ namespace JogosEmRede
             {
                 Debug.LogWarning("GeradorDeTabuleiro.Instance é nulo ao tentar alternar turno.");
             }
+
+            // 7) APLICA O DANO NO BLOCO POR ÚLTIMO
+            bloco.ReceberDano(forcaAplicada);
         }
     }
 }
-
-
