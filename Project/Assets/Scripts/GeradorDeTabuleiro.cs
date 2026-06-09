@@ -167,11 +167,12 @@ namespace JogosEmRede
                 // --- PASSO 2: SE O BLOCO CENTRAL NÃO SE CONECTA ÀS BORDAS, TUDO DESABA ---
                 if (!conectadoAsBordas[centerX, centerY])
                 {
-                    int vencedor = (turnoAtual == 1) ? 2 : 1;
-                    Debug.Log($"[Game Over] O anel de suporte foi rompido! O bloco central desabou! Jogador {turnoAtual} PERDEU! Jogador {vencedor} VENCEU.");
+                    // CORREÇÃO: Como o turno muda antes do bloco quebrar, o 'turnoAtual' já é o vencedor legítimo!
+                    int vencedor = turnoAtual;
+                    int perdedor = (vencedor == 1) ? 2 : 1;
+                    Debug.Log($"[Game Over] O anel de suporte foi rompido! O bloco central desabou! Jogador {perdedor} PERDEU! Jogador {vencedor} VENCEU.");
 
                     // --- PASSO 2 (alterado): Encontra o pinguim (pílula verde) e o remove da cena imediatamente ---
-                    // Tenta primeiro pelo nome "Pinguim", se não achar tenta pela Tag "Player".
                     GameObject pinguimObj = GameObject.Find("Pinguim");
                     if (pinguimObj == null)
                     {
@@ -181,7 +182,6 @@ namespace JogosEmRede
                         }
                         catch (System.Exception)
                         {
-                            // Se não existir a Tag, FindWithTag lança exceção; apenas ignora neste caso.
                             pinguimObj = null;
                         }
                     }
@@ -195,7 +195,7 @@ namespace JogosEmRede
                         Debug.LogWarning("[GeradorDeTabuleiro] Pinguim não encontrado para destruir (nome 'Pinguim' ou Tag 'Player').");
                     }
 
-                    // Notifica a UI / gerenciador de jogo sobre o vencedor
+                    // Notifica a UI / gerenciador de jogo sobre o vencedor correto
                     OnGameOver?.Invoke(vencedor);
 
                     // Derruba o centro e todos os blocos órfãos que perderam sustentação externa
@@ -224,7 +224,6 @@ namespace JogosEmRede
                     {
                         if (grade[x, y] == null) continue;
 
-                        // Se não tem conexão com a estrutura das bordas, cai
                         if (!conectadoAsBordas[x, y])
                         {
                             blocosParaDestruir.Add(new Vector2Int(x, y));
@@ -233,7 +232,6 @@ namespace JogosEmRede
 
                         if (x == centerX && y == centerY) continue;
 
-                        // Impede dentes solitários suspensos sem vizinhos laterais
                         bool topoLivre = (y == linhas - 1) || (grade[x, y + 1] == null);
                         if (topoLivre)
                         {
