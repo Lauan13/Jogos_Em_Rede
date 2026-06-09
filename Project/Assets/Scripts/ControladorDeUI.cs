@@ -60,7 +60,7 @@ namespace JogosEmRede
 
             if (textoResultado != null)
             {
-                textoResultado.text = $"O Pinguim caiu!\n🏆 JOGADOR {jogadorVencedor} VENCEU! 🏆";
+                textoResultado.text = $"       O Pinguim caiu!\n JOGADOR {jogadorVencedor} VENCEU! ";
             }
         }
 
