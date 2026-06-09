@@ -151,7 +151,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5d2d5fe14a54448180ba79f7a372faf2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::JogosEmRede.BlocoDeGelo
-  vidaAtual: 4
   gridX: 0
   gridY: 0
   protegido: 0
+  spritesRachadura:
+  - {fileID: -6185195508909229675, guid: dd81b7d26a3b1f24fbfe009ba0fe685f, type: 3}
+  - {fileID: -1005998965756260996, guid: 1873f86aee78fa344afd6015eb59924a, type: 3}
+  - {fileID: 6909717054156907775, guid: fb03bb83f8fe0494da11dcb2d4a97ae9, type: 3}
+  - {fileID: 5771170054347253773, guid: a6a3702663ef5d647b529de318f9765c, type: 3}

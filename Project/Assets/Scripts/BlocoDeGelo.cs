@@ -2,64 +2,80 @@
 
 namespace JogosEmRede
 {
-    // Script que representa um único bloco de gelo na grade 7x7.
-    // Contém vida, coordenadas na grade e lógica básica de receber dano/quebrar.
     public class BlocoDeGelo : MonoBehaviour
     {
-        // Vida atual do bloco. Pode ser configurada no Inspector.
-        public int vidaAtual = 4;
+        // Coordenadas do bloco na grade (preenchidas pelo Gerador)
+        [HideInInspector] public int gridX;
+        [HideInInspector] public int gridY;
+        [HideInInspector] public bool protegido = false;
 
-        // Coordenadas deste bloco na grade (0..6)
-        public int gridX;
-        public int gridY;
+        [Header("Configurações de Rachadura")]
+        // Arraste suas 4 imagens aqui no Inspector (Element 0, Element 1, Element 2, Element 3)
+        public Sprite[] spritesRachadura; 
+        
+        private int batidasAtuais = 0;
+        private SpriteRenderer spriteRenderer;
 
-        // Se verdadeiro, o bloco não recebe dano (usado para proteger o bloco central onde fica o pinguim)
-        public bool protegido = false;
+        void Awake()
+        {
+            // Pega o componente que desenha a imagem do bloco
+            spriteRenderer = GetComponent<SpriteRenderer>();
+        }
 
         void Start()
         {
-            // Atualiza o sprite inicial conforme a vida (stub para o futuro)
-            AtualizarSpriteRachadura();
+            // Garante que o bloco começa com a primeira imagem (intacto) se houver sprites na lista
+            if (spritesRachadura != null && spritesRachadura.Length > 0)
+            {
+                spriteRenderer.sprite = spritesRachadura[0];
+            }
         }
 
-        // Função pública para aplicar dano ao bloco
-        public void ReceberDano(int dano)
+        /// <summary>
+        /// Aplica dano ao bloco. Se o bloco não estiver protegido, incrementa o contador de batidas,
+        /// atualiza o sprite de rachadura e destrói o bloco se exceder o limite de imagens.
+        /// </summary>
+        /// <param name="dano">Quantidade de dano a aplicar (padrão: 1)</param>
+        public void ReceberDano(int dano = 1)
         {
-            if (protegido)
-                return; // bloco protegido não sofre dano
+            // Se for o bloco central protegido, não faz nada
+            if (protegido) return;
 
-            vidaAtual -= dano;
-            AtualizarSpriteRachadura();
+            // Avança para a próxima batida/rachadura
+            batidasAtuais += dano;
 
-            if (vidaAtual <= 0)
+            // Se ainda não estourou o limite de imagens, troca o visual
+            if (batidasAtuais < spritesRachadura.Length)
             {
+                spriteRenderer.sprite = spritesRachadura[batidasAtuais];
+                Debug.Log($"[Bloco] Sofreu dano! Batidas: {batidasAtuais}/{spritesRachadura.Length}");
+            }
+            else
+            {
+                // Se passou da última imagem, o bloco quebra de verdade!
                 QuebrarBloco();
             }
         }
 
-        // Atualizar a aparência do bloco (stub).
-        // Aqui você poderá trocar sprites/animator conforme 'vidaAtual' para mostrar rachaduras.
-        void AtualizarSpriteRachadura()
+        private void OnMouseDown()
         {
-            // Exemplo: mudar SpriteRenderer.sprite ou parâmetros do Animator conforme vidaAtual.
-            // Deixe este método preenchido mais tarde com suas imagens de gelo rachado.
+            // Chama o método público de dano
+            ReceberDano(1);
         }
 
-        // Lida com a destruição do bloco: avisa o gerador de tabuleiro e destrói o GameObject.
-        void QuebrarBloco()
+        private void QuebrarBloco()
         {
+            Debug.Log($"[Bloco] Bloco em ({gridX}, {gridY}) foi totalmente destruído!");
+            
+            // Avisa o tabuleiro para remover este bloco da lógica e checar a estabilidade
             if (GeradorDeTabuleiro.Instance != null)
             {
                 GeradorDeTabuleiro.Instance.ReportBlockDestroyed(gridX, gridY);
-            }
-            else
-            {
-                Debug.LogWarning("GeradorDeTabuleiro.Instance não encontrado ao quebrar bloco.");
+                GeradorDeTabuleiro.Instance.AlternarTurno();
             }
 
+            // Remove o objeto do jogo
             Destroy(gameObject);
         }
     }
 }
-
-
