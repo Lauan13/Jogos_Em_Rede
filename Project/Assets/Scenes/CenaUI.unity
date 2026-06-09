@@ -155,7 +155,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 28.850037, y: 6.1171}
+  m_AnchoredPosition: {x: -418, y: -150}
   m_SizeDelta: {x: 160, y: 62.8841}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &97878812
@@ -512,7 +512,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 880738f9c5184c3db8eee04ceebc5925, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::JogosEmRede.ControladorDeUI
-  textoTurno: {fileID: 0}
+  textoTurno: {fileID: 115992551}
   painelFimDeJogo: {fileID: 0}
   textoResultado: {fileID: 0}
 --- !u!1 &1690660493
