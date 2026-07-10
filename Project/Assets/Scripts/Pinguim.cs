@@ -1,11 +1,13 @@
 ﻿using UnityEngine;
+using Unity.Netcode;
 
 namespace JogosEmRede
 {
     /// <summary>
     /// Controla o comportamento do pinguim quando ele perde o suporte do gelo.
+    /// Agora preparado para rodar com Netcode: Desabar é autoritativo no servidor.
     /// </summary>
-    public class Pinguim : MonoBehaviour
+    public class Pinguim : NetworkBehaviour
     {
         private Rigidbody2D rb;
         private bool caiu = false;
@@ -24,8 +26,26 @@ namespace JogosEmRede
 
         /// <summary>
         /// Ativa a gravidade real para o pinguim despencar da tela.
+        /// Em multiplayer: clientes pedem ao servidor para executar a queda.
         /// </summary>
         public void Desabar()
+        {
+            if (!IsServer)
+            {
+                DesabarServerRpc();
+                return;
+            }
+
+            DesabarInternal();
+        }
+
+        [ServerRpc]
+        private void DesabarServerRpc(ServerRpcParams rpcParams = default)
+        {
+            DesabarInternal();
+        }
+
+        private void DesabarInternal()
         {
             if (caiu) return;
             caiu = true;
@@ -42,8 +62,28 @@ namespace JogosEmRede
             Collider2D col = GetComponent<Collider2D>();
             if (col != null) col.enabled = false;
 
-            // Destrói o objeto do pinguim após 2 segundos de queda para limpar a memória
-            Destroy(gameObject, 2f);
+            // Servidor despawna o objeto em 2 segundos (para que a animação ocorra)
+            if (NetworkObject != null)
+            {
+                // Schedule despawn on server
+                Invoke(nameof(DespawnSelf), 2f);
+            }
+            else
+            {
+                Destroy(gameObject, 2f);
+            }
+        }
+
+        private void DespawnSelf()
+        {
+            if (NetworkObject != null && NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer)
+            {
+                NetworkObject.Despawn(true);
+            }
+            else
+            {
+                Destroy(gameObject);
+            }
         }
     }
 }

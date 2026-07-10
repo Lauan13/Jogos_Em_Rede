@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
-using TMPro; // Necessário para usar o TextMeshPro
-using UnityEngine.SceneManagement; // OBRIGATÓRIO para conseguir reiniciar a cena
+using TMPro;
+using UnityEngine.SceneManagement;
+using Unity.Netcode;
 
 namespace JogosEmRede
 {
@@ -28,9 +29,19 @@ namespace JogosEmRede
                 GeradorDeTabuleiro.Instance.OnGameOver += MostrarTelaDeVitoria;
 
                 // AJUSTE INICIAL: Sorteia a força do primeiro turno assim que o jogo começa
-                GeradorDeTabuleiro.Instance.forcaDoTurnoAtual = Random.Range(1, 5);
-                // Força a UI a mostrar os dados certos do Jogador 1 logo no início
-                AtualizarTextoTurno(GeradorDeTabuleiro.Instance.turnoAtual);
+                // Somente o servidor pode modificar NetworkVariables; clientes apenas leem
+                if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer)
+                {
+                    GeradorDeTabuleiro.Instance.forcaDoTurnoAtual.Value = Random.Range(1, 5);
+                    // Força a UI a mostrar os dados certos do Jogador 1 logo no início
+                    AtualizarTextoTurno(GeradorDeTabuleiro.Instance.turnoAtual.Value);
+                }
+                else if (NetworkManager.Singleton == null)
+                {
+                    // Se não houver NetworkManager (execução local), comporta-se como antes
+                    GeradorDeTabuleiro.Instance.forcaDoTurnoAtual.Value = Random.Range(1, 5);
+                    AtualizarTextoTurno(GeradorDeTabuleiro.Instance.turnoAtual.Value);
+                }
             }
         }
 
@@ -49,7 +60,7 @@ namespace JogosEmRede
         {
             if (textoTurno != null && GeradorDeTabuleiro.Instance != null)
             {
-                int forca = GeradorDeTabuleiro.Instance.forcaDoTurnoAtual;
+                int forca = GeradorDeTabuleiro.Instance.forcaDoTurnoAtual.Value;
                 
                 // \n pula para a linha de baixo para o texto não ficar gigante pro lado
                 textoTurno.text = $"Vez do Jogador {turno}\nForça do Golpe: {forca}";

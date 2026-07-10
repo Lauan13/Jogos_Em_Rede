@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using Unity.Netcode;
 
 namespace JogosEmRede
 {
@@ -63,17 +64,20 @@ namespace JogosEmRede
         private void QuebrarBloco()
         {
             Debug.Log($"[Bloco] Bloco em ({gridX}, {gridY}) foi totalmente destruído!");
-            
-            // Avisa o tabuleiro para remover este bloco da lógica e checar a estabilidade
+
+            // Solicita ao GeradorDeTabuleiro que registre a destruição (servidor faz a validação)
             if (GeradorDeTabuleiro.Instance != null)
             {
                 GeradorDeTabuleiro.Instance.ReportBlockDestroyed(gridX, gridY);
-                // CORREÇÃO: Removeu-se o AlternarTurno() daqui de dentro! 
-                // Quem cuida de passar o turno agora é APENAS o ControleDeClique.
+                // Quem alterna o turno é o ControleDeClique; aqui apenas notificamos a remoção.
             }
 
-            // Remove o objeto do jogo
-            Destroy(gameObject);
+            // Somente o servidor destrói fisicamente o GameObject localmente.
+            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer)
+            {
+                Destroy(gameObject);
+            }
+            // Clientes aguardam a atualização via NetworkList (gridState) que removerá o visual.
         }
     }
 }

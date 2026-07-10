@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
+using Unity.Netcode;
 
 namespace JogosEmRede
 {
@@ -7,7 +8,7 @@ namespace JogosEmRede
     /// Controla a grade de blocos de gelo, turnos e a integridade estrutural do anel de gelo.
     /// Se o bloco central perder a conexão com as bordas externas (paredes), a estrutura desaba e o pinguim cai.
     /// </summary>
-    public class GeradorDeTabuleiro : MonoBehaviour
+    public class GeradorDeTabuleiro : NetworkBehaviour
     {
         public static GeradorDeTabuleiro Instance;
 
@@ -17,12 +18,16 @@ namespace JogosEmRede
         private int linhas = 7;
 
         public float espacamento = 1f;
-        
-        public int forcaDoTurnoAtual;
+
+        // Estado de turno/criativo sincronizado pelo servidor
+        public NetworkVariable<int> forcaDoTurnoAtual = new NetworkVariable<int>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+        public NetworkVariable<int> turnoAtual = new NetworkVariable<int>(1, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+
+        // Representação compacta da grade: 1 = bloco existe, 0 = removido
+        public NetworkList<int> gridState;
 
         private GameObject[,] grade;
 
-        public int turnoAtual = 1;
 
         private bool emVerificacao = false;
 
@@ -47,52 +52,100 @@ namespace JogosEmRede
             grade = new GameObject[colunas, linhas];
             centerX = (colunas - 1) / 2; // 3
             centerY = (linhas - 1) / 2; // 3
+            // Inicializa a lista de estado da grade (servidor preencherá os valores no Start)
+            gridState = new NetworkList<int>();
         }
 
         void Start()
         {
-            for (int x = 0; x < colunas; x++)
+            // Subscrição para mudanças na lista de estado da grade
+            gridState.OnListChanged += OnGridStateChanged;
+        }
+
+        public override void OnNetworkSpawn()
+        {
+            base.OnNetworkSpawn();
+
+            if (IsServer)
             {
-                for (int y = 0; y < linhas; y++)
+                // Servidor inicializa a grade e cria os objetos locais após spawn
+                for (int x = 0; x < colunas; x++)
                 {
-                    float posX = (x - centerX) * espacamento;
-                    float posY = (y - centerY) * espacamento;
-
-                    Vector3 pos = new Vector3(posX, posY, 0f);
-                    GameObject go = Instantiate(blocoPrefab, pos, Quaternion.identity, transform);
-                    go.name = $"Bloco_{x}_{y}";
-
-                    BlocoDeGelo bloco = go.GetComponent<BlocoDeGelo>();
-                    if (bloco != null)
+                    for (int y = 0; y < linhas; y++)
                     {
-                        bloco.gridX = x;
-                        bloco.gridY = y;
+                        float posX = (x - centerX) * espacamento;
+                        float posY = (y - centerY) * espacamento;
 
-                        if (x == centerX && y == centerY)
+                        Vector3 pos = new Vector3(posX, posY, 0f);
+                        GameObject go = Instantiate(blocoPrefab, pos, Quaternion.identity, transform);
+                        go.name = $"Bloco_{x}_{y}";
+
+                        BlocoDeGelo bloco = go.GetComponent<BlocoDeGelo>();
+                        if (bloco != null)
                         {
-                            bloco.protegido = true;
-                        }
-                    }
-                    else
-                    {
-                        Debug.LogWarning("O prefab do bloco não tem o componente BlocoDeGelo.");
-                    }
+                            bloco.gridX = x;
+                            bloco.gridY = y;
 
-                    grade[x, y] = go;
+                            if (x == centerX && y == centerY)
+                            {
+                                bloco.protegido = true;
+                            }
+                        }
+                        else
+                        {
+                            Debug.LogWarning("O prefab do bloco não tem o componente BlocoDeGelo.");
+                        }
+
+                        grade[x, y] = go;
+                        gridState.Add(1); // bloco presente
+                    }
+                }
+            }
+            else
+            {
+                // Cliente: se o servidor já preencheu a lista (modo de reconexão), cria visuais
+                if (gridState.Count == colunas * linhas)
+                {
+                    CreateAllVisualsFromGridState();
                 }
             }
         }
 
         public void AlternarTurno()
         {
-            turnoAtual = (turnoAtual == 1) ? 2 : 1;
-            forcaDoTurnoAtual = Random.Range(1, 5);
-            Debug.Log($"[Turno] Agora é o turno do Jogador {turnoAtual}. Força: {forcaDoTurnoAtual}");
-            OnTurnoAlterado?.Invoke(turnoAtual);
+            // Clientes pedem ao servidor para alternar o turno; servidor executa diretamente
+            if (!IsServer)
+            {
+                AlternarTurnoServerRpc();
+                return;
+            }
+
+            ToggleTurno();
+        }
+
+        [ServerRpc]
+        private void AlternarTurnoServerRpc(ServerRpcParams rpcParams = default)
+        {
+            ToggleTurno();
+        }
+
+        private void ToggleTurno()
+        {
+            turnoAtual.Value = (turnoAtual.Value == 1) ? 2 : 1;
+            forcaDoTurnoAtual.Value = Random.Range(1, 5);
+            Debug.Log($"[Turno] Agora é o turno do Jogador {turnoAtual.Value}. Força: {forcaDoTurnoAtual.Value}");
+            OnTurnoAlterado?.Invoke(turnoAtual.Value);
         }
 
         public void ReportBlockDestroyed(int x, int y)
         {
+            // If called on a client, forward to server
+            if (!IsServer)
+            {
+                ReportBlockDestroyedServerRpc(x, y);
+                return;
+            }
+
             if (x < 0 || x >= colunas || y < 0 || y >= linhas)
             {
                 Debug.LogWarning($"ReportBlockDestroyed chamado com coordenadas inválidas: ({x}, {y})");
@@ -105,7 +158,24 @@ namespace JogosEmRede
                 Debug.Log($"[Bloco Destruído] Bloco em ({x}, {y}) removido da grade.");
             }
 
+            // Atualiza o estado de grade sincronizado para todos os clients
+            int idx = x + y * colunas;
+            if (idx >= 0 && idx < gridState.Count)
+            {
+                gridState[idx] = 0;
+            }
+            else if (idx >= 0 && IsServer && gridState.Count == 0)
+            {
+                // Caso raro: se gridState ainda não foi populada, tenta proteger contra exceção
+            }
+
             ChecarEstabilidade();
+        }
+
+        [ServerRpc]
+        private void ReportBlockDestroyedServerRpc(int x, int y, ServerRpcParams rpcParams = default)
+        {
+            ReportBlockDestroyed(x, y);
         }
 
         /// <summary>
@@ -113,6 +183,8 @@ namespace JogosEmRede
         /// </summary>
         public void ChecarEstabilidade()
         {
+            if (!IsServer) // Autoridade apenas no servidor
+                return;
             if (emVerificacao)
                 return;
 
@@ -168,7 +240,7 @@ namespace JogosEmRede
                 if (!conectadoAsBordas[centerX, centerY])
                 {
                     // CORREÇÃO: Como o turno muda antes do bloco quebrar, o 'turnoAtual' já é o vencedor legítimo!
-                    int vencedor = turnoAtual;
+                    int vencedor = turnoAtual.Value;
                     int perdedor = (vencedor == 1) ? 2 : 1;
                     Debug.Log($"[Game Over] O anel de suporte foi rompido! O bloco central desabou! Jogador {perdedor} PERDEU! Jogador {vencedor} VENCEU.");
 
@@ -188,7 +260,25 @@ namespace JogosEmRede
 
                     if (pinguimObj != null)
                     {
-                        Destroy(pinguimObj);
+                        // Se o pinguim tiver o componente Pinguim (NetworkBehaviour), peça para ele 'Desabar' (server-authoritative)
+                        var pComp = pinguimObj.GetComponent<Pinguim>();
+                        if (pComp != null)
+                        {
+                            pComp.Desabar();
+                        }
+                        else
+                        {
+                            // Fallback: se for um NetworkObject, despawna; caso contrário, destrói a GameObject
+                            var netObj = pinguimObj.GetComponent<NetworkObject>();
+                            if (netObj != null && IsServer)
+                            {
+                                netObj.Despawn(true);
+                            }
+                            else
+                            {
+                                Destroy(pinguimObj);
+                            }
+                        }
                     }
                     else
                     {
@@ -273,6 +363,58 @@ namespace JogosEmRede
                 return null;
 
             return grade[x, y];
+        }
+
+        // ----- Helpers para sincronização visual da grade -----
+        private void OnGridStateChanged(NetworkListEvent<int> changeEvent)
+        {
+            // Simples: ao detectar qualquer mudança, refazemos os visuais para garantir consistência.
+            CreateAllVisualsFromGridState();
+        }
+
+        private void CreateAllVisualsFromGridState()
+        {
+            for (int x = 0; x < colunas; x++)
+            {
+                for (int y = 0; y < linhas; y++)
+                {
+                    int idx = x + y * colunas;
+                    if (idx < gridState.Count && gridState[idx] == 1)
+                    {
+                        if (grade[x, y] == null) CreateVisualBlock(x, y);
+                    }
+                    else
+                    {
+                        RemoveVisualBlock(x, y);
+                    }
+                }
+            }
+        }
+
+        private void CreateVisualBlock(int x, int y)
+        {
+            if (grade[x, y] != null) return;
+            float posX = (x - centerX) * espacamento;
+            float posY = (y - centerY) * espacamento;
+            Vector3 pos = new Vector3(posX, posY, 0f);
+            GameObject go = Instantiate(blocoPrefab, pos, Quaternion.identity, transform);
+            go.name = $"Bloco_{x}_{y}";
+            BlocoDeGelo bloco = go.GetComponent<BlocoDeGelo>();
+            if (bloco != null)
+            {
+                bloco.gridX = x;
+                bloco.gridY = y;
+                if (x == centerX && y == centerY) bloco.protegido = true;
+            }
+            grade[x, y] = go;
+        }
+
+        private void RemoveVisualBlock(int x, int y)
+        {
+            if (x < 0 || x >= colunas || y < 0 || y >= linhas) return;
+            GameObject go = grade[x, y];
+            grade[x, y] = null;
+            if (go != null) Destroy(go);
         }
 
         public int GetColunas()

@@ -69,7 +69,7 @@ namespace JogosEmRede
             int forcaAplicada = 1;
             if (GeradorDeTabuleiro.Instance != null)
             {
-                forcaAplicada = GeradorDeTabuleiro.Instance.forcaDoTurnoAtual;
+                forcaAplicada = GeradorDeTabuleiro.Instance.forcaDoTurnoAtual.Value;
             }
 
             // 6) ALTERNA O TURNO PRIMEIRO
