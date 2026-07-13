@@ -1,9 +1,13 @@
 ﻿using UnityEngine;
-using Unity.Netcode;
+using Unity.Netcode; // Certifique-se de que este namespace está aqui!
 
 namespace JogosEmRede
 {
-    public class BlocoDeGelo : MonoBehaviour
+    /// <summary>
+    /// Controla o estado de rachadura e destruição de um bloco de gelo na rede.
+    /// </summary>
+    // CORREÇÃO 1: Mudar de MonoBehaviour para NetworkBehaviour
+    public class BlocoDeGelo : NetworkBehaviour
     {
         // Coordenadas do bloco na grade (preenchidas pelo Gerador)
         [HideInInspector] public int gridX;
@@ -11,46 +15,66 @@ namespace JogosEmRede
         [HideInInspector] public bool protegido = false;
 
         [Header("Configurações de Rachadura")]
-        // Arraste suas 4 imagens aqui no Inspector (Element 0, Element 1, Element 2, Element 3)
         public Sprite[] spritesRachadura; 
         
-        private int batidasAtuais = 0;
+        // CORREÇÃO 2: A vida/batidas do bloco precisa ser uma NetworkVariable para sincronizar entre as máquinas
+        // Somente o Servidor pode escrever nela, mas todos os clientes podem ler.
+        public NetworkVariable<int> batidasAtuais = new NetworkVariable<int>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+        
         private SpriteRenderer spriteRenderer;
 
         void Awake()
         {
-            // Pega o componente que desenha a imagem do bloco
             spriteRenderer = GetComponent<SpriteRenderer>();
         }
 
-        void Start()
+        // CORREÇÃO 3: Usamos OnNetworkSpawn em vez de Start para sincronizar variáveis de rede assim que o bloco nasce
+        public override void OnNetworkSpawn()
         {
-            // Garante que o bloco começa com a primeira imagem (intacto) se houver sprites na lista
-            if (spritesRachadura != null && spritesRachadura.Length > 0)
+            base.OnNetworkSpawn();
+
+            // Vincula o evento: Sempre que o valor de batidasAtuais mudar na rede, roda a função para atualizar o sprite
+            batidasAtuais.OnValueChanged += AoMudarBatidas;
+
+            // Garante que começa com o sprite correto atualizado (importante para quem entra depois)
+            AtualizarSpriteVisual(batidasAtuais.Value);
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            base.OnNetworkDespawn();
+            // Remove a vinculação do evento ao sumir da rede para evitar vazamento de memória
+            batidasAtuais.OnValueChanged -= AoMudarBatidas;
+        }
+
+        private void AoMudarBatidas(int valorAntigo, int valorNovo)
+        {
+            AtualizarSpriteVisual(valorNovo);
+        }
+
+        private void AtualizarSpriteVisual(int batidas)
+        {
+            if (spritesRachadura != null && batidas < spritesRachadura.Length && batidas >= 0)
             {
-                spriteRenderer.sprite = spritesRachadura[0];
+                spriteRenderer.sprite = spritesRachadura[batidas];
             }
         }
 
         /// <summary>
-        /// Aplica dano ao bloco. Se o bloco não estiver protegido, incrementa o contador de batidas,
-        /// atualiza o sprite de rachadura e destrói o bloco se exceder o limite de imagens.
+        /// Aplica dano ao bloco. Roda com segurança apenas no Servidor.
         /// </summary>
-        /// <param name="dano">Quantidade de dano a aplicar (padrão: 1)</param>
         public void ReceberDano(int dano = 1)
         {
-            // Se for o bloco central protegido, não faz nada
+            // Regra de Ouro: Apenas o servidor altera estados e aplica dano no Netcode!
+            if (!IsServer) return;
             if (protegido) return;
 
-            // Avança para a próxima batida/rachadura
-            batidasAtuais += dano;
+            // Avança para a próxima batida/rachadura na variável de rede
+            batidasAtuais.Value += dano;
 
-            // CORREÇÃO: Se o dano foi 4, batidasAtuais vai direto para 4. 
-            // Se spritesRachadura.Length for 4, precisamos quebrar o bloco imediatamente!
-            if (batidasAtuais < spritesRachadura.Length)
+            if (batidasAtuais.Value < spritesRachadura.Length)
             {
-                spriteRenderer.sprite = spritesRachadura[batidasAtuais];
-                Debug.Log($"[Bloco] Sofreu dano! Batidas: {batidasAtuais}/{spritesRachadura.Length}");
+                Debug.Log($"[Servidor] Bloco ({gridX}, {gridY}) sofreu dano! Batidas: {batidasAtuais.Value}/{spritesRachadura.Length}");
             }
             else
             {
@@ -59,25 +83,20 @@ namespace JogosEmRede
             }
         }
 
-        // CORREÇÃO: Removeu-se o método OnMouseDown() antigo que causava conflitos de clique duplicado!
-
         private void QuebrarBloco()
         {
-            Debug.Log($"[Bloco] Bloco em ({gridX}, {gridY}) foi totalmente destruído!");
+            if (!IsServer) return;
 
-            // Solicita ao GeradorDeTabuleiro que registre a destruição (servidor faz a validação)
+            Debug.Log($"[Servidor] Bloco em ({gridX}, {gridY}) foi totalmente destruído!");
+
+            // Solicita ao GeradorDeTabuleiro que registre a destruição na matriz de física
             if (GeradorDeTabuleiro.Instance != null)
             {
                 GeradorDeTabuleiro.Instance.ReportBlockDestroyed(gridX, gridY);
-                // Quem alterna o turno é o ControleDeClique; aqui apenas notificamos a remoção.
             }
 
-            // Somente o servidor destrói fisicamente o GameObject localmente.
-            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer)
-            {
-                Destroy(gameObject);
-            }
-            // Clientes aguardam a atualização via NetworkList (gridState) que removerá o visual.
+            // No Netcode, você não dá Destroy(gameObject). 
+            // O próprio método netObj.Despawn() do GeradorDeTabuleiro já vai remover este objeto da rede de todos!
         }
     }
 }

@@ -11,8 +11,8 @@ GameObject:
   - component: {fileID: 3167477893755998590}
   - component: {fileID: 8590387017794712921}
   - component: {fileID: 4356606251463299398}
-  - component: {fileID: 2495587321442871013}
   - component: {fileID: -543056735102604928}
+  - component: {fileID: 2495587321442871013}
   m_Layer: 0
   m_Name: BlocoDeGelo
   m_TagString: Untagged
@@ -140,26 +140,6 @@ BoxCollider2D:
   m_AutoTiling: 0
   m_Size: {x: 1, y: 1}
   m_EdgeRadius: 0
---- !u!114 &2495587321442871013
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 560275926365885840}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5d2d5fe14a54448180ba79f7a372faf2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::JogosEmRede.BlocoDeGelo
-  gridX: 0
-  gridY: 0
-  protegido: 0
-  spritesRachadura:
-  - {fileID: -6185195508909229675, guid: dd81b7d26a3b1f24fbfe009ba0fe685f, type: 3}
-  - {fileID: -1005998965756260996, guid: 1873f86aee78fa344afd6015eb59924a, type: 3}
-  - {fileID: 6909717054156907775, guid: fb03bb83f8fe0494da11dcb2d4a97ae9, type: 3}
-  - {fileID: 5771170054347253773, guid: a6a3702663ef5d647b529de318f9765c, type: 3}
 --- !u!114 &-543056735102604928
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -186,3 +166,29 @@ MonoBehaviour:
   AutoObjectParentSync: 1
   SyncOwnerTransformWhenParented: 1
   AllowOwnerToParent: 0
+--- !u!114 &2495587321442871013
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 560275926365885840}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5d2d5fe14a54448180ba79f7a372faf2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::JogosEmRede.BlocoDeGelo
+  ShowTopMostFoldoutHeaderGroup: 1
+  gridX: 0
+  gridY: 0
+  protegido: 0
+  spritesRachadura:
+  - {fileID: -6185195508909229675, guid: dd81b7d26a3b1f24fbfe009ba0fe685f, type: 3}
+  - {fileID: -1005998965756260996, guid: 1873f86aee78fa344afd6015eb59924a, type: 3}
+  - {fileID: 6909717054156907775, guid: fb03bb83f8fe0494da11dcb2d4a97ae9, type: 3}
+  - {fileID: 5771170054347253773, guid: a6a3702663ef5d647b529de318f9765c, type: 3}
+  batidasAtuais:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 0
