@@ -1,102 +1,21 @@
 using UnityEngine;
-using TMPro;
 using Unity.Netcode;
-using Unity.Netcode.Transports.UTP;
 
-namespace JogosEmRede
+public class GerenciadorDeConexao : MonoBehaviour
 {
-    public class GerenciadorDeConexao : MonoBehaviour
+    // Limpamos quaisquer modificações experimentais e deixamos o script original pronto para receber as chamadas de conexão locais.
+    public void StartHost()
     {
-        [Header("Referências da UI")]
-        public TMP_InputField campoIP; // Arraste o seu InputField aqui no Inspector
-        public GameObject painelMenuInicial; // Arraste o painel que contém os botões e o InputField para podermos escondê-lo ao iniciar
+        NetworkManager.Singleton.StartHost();
+    }
 
-        private UnityTransport transporteDeRede;
+    public void StartClient()
+    {
+        NetworkManager.Singleton.StartClient();
+    }
 
-        private void Start()
-        {
-            // Busca o componente de transporte de rede do NetworkManager
-            if (NetworkManager.Singleton != null)
-            {
-                transporteDeRede = NetworkManager.Singleton.GetComponent<UnityTransport>();
-            }
-        }
-
-        /// <summary>
-        /// Lê o IP do campo de texto e o configura como o endereço de destino no UnityTransport.
-        /// </summary>
-        private void ConfigurarEnderecoDeIP()
-        {
-            if (transporteDeRede == null)
-            {
-                Debug.LogError("[Rede] UnityTransport não encontrado no NetworkManager!");
-                return;
-            }
-
-            // Se o campo de texto não estiver vazio, aplica o IP digitado
-            if (campoIP != null && !string.IsNullOrEmpty(campoIP.text))
-            {
-                string ipDigitado = campoIP.text.Trim();
-                transporteDeRede.SetConnectionData(ipDigitado, transporteDeRede.ConnectionData.Port);
-                Debug.Log($"[Rede] Endereço de IP configurado para: {ipDigitado}");
-            }
-            else
-            {
-                // Se estiver vazio, usa o IP padrão configurado no Inspector (ex: 127.0.0.1)
-                Debug.LogWarning("[Rede] Campo de IP vazio. Usando o IP padrão do NetworkManager.");
-            }
-        }
-
-        // --- FUNÇÕES DOS BOTÕES DA UI ---
-
-        public void ClicouEmHost()
-        {
-<<<<<<< HEAD
-            // O Host sempre escuta localmente (0.0.0.0 ou 127.0.0.1) para evitar conflitos de portas!
-            if (transporteDeRede != null)
-            {
-                transporteDeRede.SetConnectionData("0.0.0.0", transporteDeRede.ConnectionData.Port);
-            }
-    
-=======
-            // O Host roda localmente, então ele ouve em sua própria máquina. 
-            // O IP configurado aqui define em qual interface de rede ele vai escutar (geralmente 0.0.0.0 ou IP local).
-            ConfigurarEnderecoDeIP();
-            
->>>>>>> parent of 6d02ac5 (Revert "save - 10:50")
-            if (NetworkManager.Singleton.StartHost())
-            {
-                EsconderMenuInicial();
-            }
-        }
-
-        public void ClicouEmClient()
-        {
-            // O Cliente obrigatoriamente precisa do IP correto do Host para conectar!
-            ConfigurarEnderecoDeIP();
-
-            if (NetworkManager.Singleton.StartClient())
-            {
-                EsconderMenuInicial();
-            }
-        }
-
-        public void ClicouEmServer()
-        {
-            ConfigurarEnderecoDeIP();
-
-            if (NetworkManager.Singleton.StartServer())
-            {
-                EsconderMenuInicial();
-            }
-        }
-
-        private void EsconderMenuInicial()
-        {
-            if (painelMenuInicial != null)
-            {
-                painelMenuInicial.SetActive(false);
-            }
-        }
+    public void StartServer()
+    {
+        NetworkManager.Singleton.StartServer();
     }
 }

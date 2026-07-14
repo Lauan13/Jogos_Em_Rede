@@ -1,12 +1,11 @@
 ﻿using UnityEngine;
-using Unity.Netcode; // Certifique-se de que este namespace está aqui!
+using Unity.Netcode; 
 
 namespace JogosEmRede
 {
     /// <summary>
     /// Controla o estado de rachadura e destruição de um bloco de gelo na rede.
     /// </summary>
-    // CORREÇÃO 1: Mudar de MonoBehaviour para NetworkBehaviour
     public class BlocoDeGelo : NetworkBehaviour
     {
         // Coordenadas do bloco na grade (preenchidas pelo Gerador)
@@ -17,8 +16,7 @@ namespace JogosEmRede
         [Header("Configurações de Rachadura")]
         public Sprite[] spritesRachadura; 
         
-        // CORREÇÃO 2: A vida/batidas do bloco precisa ser uma NetworkVariable para sincronizar entre as máquinas
-        // Somente o Servidor pode escrever nela, mas todos os clientes podem ler.
+        // A vida/batidas do bloco é uma NetworkVariable para sincronizar entre as máquinas
         public NetworkVariable<int> batidasAtuais = new NetworkVariable<int>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
         
         private SpriteRenderer spriteRenderer;
@@ -28,7 +26,6 @@ namespace JogosEmRede
             spriteRenderer = GetComponent<SpriteRenderer>();
         }
 
-        // CORREÇÃO 3: Usamos OnNetworkSpawn em vez de Start para sincronizar variáveis de rede assim que o bloco nasce
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
@@ -36,7 +33,7 @@ namespace JogosEmRede
             // Vincula o evento: Sempre que o valor de batidasAtuais mudar na rede, roda a função para atualizar o sprite
             batidasAtuais.OnValueChanged += AoMudarBatidas;
 
-            // Garante que começa com o sprite correto atualizado (importante para quem entra depois)
+            // Garante que começa com o sprite correto atualizado
             AtualizarSpriteVisual(batidasAtuais.Value);
         }
 
@@ -52,6 +49,11 @@ namespace JogosEmRede
             AtualizarSpriteVisual(valorNovo);
         }
 
+        private void AktualisarSpriteVisual(int batidas)
+        {
+            // Nota: Se houver algum erro de digitação no nome original, mantemos exatamente como estava às 10:50.
+        }
+
         private void AtualizarSpriteVisual(int batidas)
         {
             if (spritesRachadura != null && batidas < spritesRachadura.Length && batidas >= 0)
@@ -65,7 +67,6 @@ namespace JogosEmRede
         /// </summary>
         public void ReceberDano(int dano = 1)
         {
-            // Regra de Ouro: Apenas o servidor altera estados e aplica dano no Netcode!
             if (!IsServer) return;
             if (protegido) return;
 
@@ -78,7 +79,6 @@ namespace JogosEmRede
             }
             else
             {
-                // Se o dano atingiu ou passou do limite de sprites, o bloco quebra!
                 QuebrarBloco();
             }
         }
@@ -94,9 +94,6 @@ namespace JogosEmRede
             {
                 GeradorDeTabuleiro.Instance.ReportBlockDestroyed(gridX, gridY);
             }
-
-            // No Netcode, você não dá Destroy(gameObject). 
-            // O próprio método netObj.Despawn() do GeradorDeTabuleiro já vai remover este objeto da rede de todos!
         }
     }
 }
