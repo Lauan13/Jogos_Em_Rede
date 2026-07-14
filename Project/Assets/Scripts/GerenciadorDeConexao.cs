@@ -51,12 +51,19 @@ namespace JogosEmRede
 
         public void ClicouEmHost()
         {
+<<<<<<< HEAD
             // O Host sempre escuta localmente (0.0.0.0 ou 127.0.0.1) para evitar conflitos de portas!
             if (transporteDeRede != null)
             {
                 transporteDeRede.SetConnectionData("0.0.0.0", transporteDeRede.ConnectionData.Port);
             }
     
+=======
+            // O Host roda localmente, então ele ouve em sua própria máquina. 
+            // O IP configurado aqui define em qual interface de rede ele vai escutar (geralmente 0.0.0.0 ou IP local).
+            ConfigurarEnderecoDeIP();
+            
+>>>>>>> parent of 6d02ac5 (Revert "save - 10:50")
             if (NetworkManager.Singleton.StartHost())
             {
                 EsconderMenuInicial();
