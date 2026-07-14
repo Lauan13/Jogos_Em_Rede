@@ -42,35 +42,26 @@ namespace JogosEmRede
 
             proximoCliquePermitido = Time.time + tempoDeEsperaEntreCliques;
 
-            // Obtém o componente de rede do bloco clicado
-            NetworkObject netObj = bloco.GetComponent<NetworkObject>();
-            if (netObj != null)
-            {
-                // SOLUÇÃO: Envia a referência direta do objeto na rede, evitando erros de coordenadas zeradas no cliente!
-                ProcessarCliqueNoServidorServerRpc(netObj);
-            }
+            // Envia para o servidor processar
+            ProcessarCliqueNoServidorServerRpc(bloco.gridX, bloco.gridY);
         }
 
-        /// <summary>
-        /// O servidor recebe a referência direta do objeto de rede clicado pelo cliente.
-        /// </summary>
         [ServerRpc(RequireOwnership = false)]
-        private void ProcessarCliqueNoServidorServerRpc(NetworkObjectReference blocoReference)
+        private void ProcessarCliqueNoServidorServerRpc(int x, int y)
         {
             if (GeradorDeTabuleiro.Instance == null) return;
 
-            // Tenta obter o objeto real no servidor a partir da referência enviada pelo cliente
-            if (blocoReference.TryGet(out NetworkObject netObj))
-            {
-                BlocoDeGelo bloco = netObj.GetComponent<BlocoDeGelo>();
-                if (bloco == null) return;
+            GameObject blocoObj = GeradorDeTabuleiro.Instance.GetBlock(x, y);
+            if (blocoObj == null) return;
 
-                // Como o Servidor gerou este bloco originalmente, o servidor possui o gridX e gridY corretos na sua própria memória!
-                bloco.ReceberDano(1);
+            BlocoDeGelo bloco = blocoObj.GetComponent<BlocoDeGelo>();
+            if (bloco == null) return;
 
-                // Muda o turno para o próximo jogador
-                GeradorDeTabuleiro.Instance.AlternarTurno();
-            }
+            // APLICAÇÃO DIRETA: Força fixa sempre 1!
+            bloco.ReceberDano(1);
+
+            // Muda o turno para o próximo jogador
+            GeradorDeTabuleiro.Instance.AlternarTurno();
         }
     }
 }
