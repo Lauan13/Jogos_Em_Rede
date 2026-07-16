@@ -47,8 +47,8 @@ public static class RegisterNetworkPrefabsEditor
     [MenuItem("Netcode/Create NetworkManager GameObject in Scene")]
     public static void CreateNetworkManagerInScene()
     {
-        // Verifica se já existe
-        var existing = Object.FindObjectOfType(typeof(Unity.Netcode.NetworkManager));
+        // Correção do aviso de obsolescência: alterado de FindObjectOfType para FindFirstObjectByType
+        var existing = Object.FindFirstObjectByType(typeof(Unity.Netcode.NetworkManager));
         if (existing != null)
         {
             Debug.Log("Já existe um NetworkManager na cena.");
@@ -69,5 +69,3 @@ public static class RegisterNetworkPrefabsEditor
         Debug.Log("NetworkManager criado na cena. Configure o Transport (ex: Unity Transport) e registre os NetworkPrefabs via Inspector.");
     }
 }
-
-

@@ -12,7 +12,6 @@ GameObject:
   - component: {fileID: 6952100800051780839}
   - component: {fileID: 6326310571734572449}
   - component: {fileID: 8184468068338865032}
-  - component: {fileID: 6562549915277702710}
   m_Layer: 0
   m_Name: _GerenciadorDoJogo
   m_TagString: Untagged
@@ -47,7 +46,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 2958247049
+  GlobalObjectIdHash: 3217506341
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -74,22 +73,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::JogosEmRede.GeradorDeTabuleiro
   ShowTopMostFoldoutHeaderGroup: 1
+  largura: 7
+  altura: 7
   blocoPrefab: {fileID: 560275926365885840, guid: 8efd48e7a9d48884b8864d567ad214a6, type: 3}
   espacamento: 1
-  forcaDoTurnoAtual:
-    UpdateTraits:
-      MinSecondsBetweenUpdates: 0
-      MaxSecondsBetweenUpdates: 0
-    m_InternalValue: 0
   turnoAtual:
     UpdateTraits:
       MinSecondsBetweenUpdates: 0
       MaxSecondsBetweenUpdates: 0
     m_InternalValue: 1
-  gridState:
-    UpdateTraits:
-      MinSecondsBetweenUpdates: 0
-      MaxSecondsBetweenUpdates: 0
 --- !u!114 &8184468068338865032
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -102,16 +94,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8e0f810075d743a28765dc3be59bd7e7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::JogosEmRede.ControleDeClique
+  ShowTopMostFoldoutHeaderGroup: 1
   tempoDeEsperaEntreCliques: 0.3
---- !u!114 &6562549915277702710
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5831326979112955126}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 627c69a828935ee498fee8d5ba6a9a83, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::JogosEmRede.CarregadorDeCenas
