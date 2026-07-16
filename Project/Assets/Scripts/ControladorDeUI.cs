@@ -18,13 +18,26 @@ namespace JogosEmRede
         {
             if (painelFimDeJogo != null) painelFimDeJogo.SetActive(false);
 
+            // Tenta se inscrever nos eventos do Tabuleiro de forma segura
+            InscreverNosEventosDoTabuleiro();
+        }
+
+        private void InscreverNosEventosDoTabuleiro()
+        {
             if (GeradorDeTabuleiro.Instance != null)
             {
+                // Nos inscrevemos no evento de mudança de turno
                 GeradorDeTabuleiro.Instance.OnTurnoAlterado += AtualizarTextoTurno;
                 GeradorDeTabuleiro.Instance.OnGameOver += MostrarTelaDeVitoria;
 
-                // Inicializa a UI com o estado atual do tabuleiro
+                // Inicializa a UI imediatamente com o turno que já está ativo
                 AtualizarTextoTurno(GeradorDeTabuleiro.Instance.turnoAtual.Value);
+                Debug.Log($"[UI] Inscrito com sucesso! Turno inicial: {GeradorDeTabuleiro.Instance.turnoAtual.Value}");
+            }
+            else
+            {
+                // Caso o Gerador ainda não tenha sido criado na rede, tentamos novamente no próximo frame
+                Invoke(nameof(InscreverNosEventosDoTabuleiro), 0.1f);
             }
         }
 
@@ -37,18 +50,14 @@ namespace JogosEmRede
             }
         }
 
-        // Exibição super limpa, sem depender de dados aleatórios
-        private void UpdateTextoTurnoLocal(int turno)
+        private void AtualizarTextoTurno(int turno)
         {
             if (textoTurno != null)
             {
+                // Indica de quem é a vez de forma clara
                 textoTurno.text = $"Vez do Jogador {turno}";
+                Debug.Log($"[UI] Texto atualizado na tela: Vez do Jogador {turno}");
             }
-        }
-
-        private void AtualizarTextoTurno(int turno)
-        {
-            UpdateTextoTurnoLocal(turno);
         }
 
         private void MostrarTelaDeVitoria(int jogadorVencedor)
@@ -64,7 +73,7 @@ namespace JogosEmRede
         {
             if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer)
             {
-                // Se for o servidor, reinicia a cena para a rede inteira
+                // Se for o servidor (Host), reinicia a cena de forma sincronizada na rede inteira
                 NetworkManager.Singleton.SceneManager.LoadScene("QuebraGelo", LoadSceneMode.Single);
             }
             else if (NetworkManager.Singleton == null)
