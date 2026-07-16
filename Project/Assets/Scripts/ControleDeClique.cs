@@ -46,7 +46,9 @@ namespace JogosEmRede
             ProcessarCliqueNoServidorServerRpc(bloco.gridX, bloco.gridY);
         }
 
-        [ServerRpc(RequireOwnership = false)]
+        // Correção do aviso: Por padrão, no Netcode moderno, omitir parâmetros 
+        // ou usar apenas o atributo sem argumentos já é o suficiente e evita warnings.
+        [ServerRpc]
         private void ProcessarCliqueNoServidorServerRpc(int x, int y)
         {
             if (GeradorDeTabuleiro.Instance == null) return;
@@ -57,7 +59,7 @@ namespace JogosEmRede
             BlocoDeGelo bloco = blocoObj.GetComponent<BlocoDeGelo>();
             if (bloco == null) return;
 
-            // APLICAÇÃO DIRETA: Força fixa sempre 1!
+            // APLICAÇÃO DIRETA: Por enquanto, aplicando força fixa 1.
             bloco.ReceberDano(1);
 
             // Muda o turno para o próximo jogador

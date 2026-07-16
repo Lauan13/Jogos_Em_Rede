@@ -29,14 +29,6 @@
             </PendingDiffInfo>
           </value>
         </entry>
-        <entry key="$PROJECT_DIR$/Assets/Scripts/EventSystemSingleton.cs">
-          <value>
-            <PendingDiffInfo>
-              <option name="filePath" value="$PROJECT_DIR$/Assets/Scripts/EventSystemSingleton.cs" />
-              <option name="updatedContent" value="using UnityEngine;&#10;using UnityEngine.EventSystems;&#10;#if UNITY_6_0_OR_NEWER&#10;using UnityEngine.SceneManagement;&#10;#endif&#10;&#10;namespace JogosEmRede&#10;{&#10;    /// &lt;summary&gt;&#10;    /// Garante que há apenas um EventSystem ativo na cena.&#10;    /// Se múltiplos EventSystems forem detectados, desativa os extras.&#10;    /// &lt;/summary&gt;&#10;    public class EventSystemSingleton : MonoBehaviour&#10;    {&#10;        void Awake()&#10;        {&#10;            #if UNITY_6_0_OR_NEWER&#10;            EventSystem[] eventSystems = Object.FindObjectsByType&lt;EventSystem&gt;(FindObjectsSortMode.None);&#10;            #else&#10;            EventSystem[] eventSystems = Object.FindObjectsOfType&lt;EventSystem&gt;();&#10;            #endif&#10;            &#10;            if (eventSystems.Length &gt; 1)&#10;            {&#10;                Debug.LogWarning($&quot;[EventSystemSingleton] Múltiplos EventSystems detectados ({eventSystems.Length}). Desativando os extras...&quot;);&#10;                &#10;                // Mantém o primeiro ativo, desativa os demais&#10;                for (int i = 1; i &lt; eventSystems.Length; i++)&#10;                {&#10;                    eventSystems[i].gameObject.SetActive(false);&#10;                    Debug.Log($&quot;EventSystem em '{eventSystems[i].gameObject.name}' foi desativado.&quot;);&#10;                }&#10;            }&#10;            else if (eventSystems.Length == 0)&#10;            {&#10;                Debug.LogWarning(&quot;[EventSystemSingleton] Nenhum EventSystem encontrado na cena. Criando um novo...&quot;);&#10;                GameObject go = new GameObject(&quot;EventSystem&quot;);&#10;                go.AddComponent&lt;EventSystem&gt;();&#10;                go.AddComponent&lt;StandaloneInputModule&gt;();&#10;            }&#10;        }&#10;    }&#10;}&#10;&#10;" />
-            </PendingDiffInfo>
-          </value>
-        </entry>
         <entry key="$PROJECT_DIR$/Assets/Scripts/NetworkUI.cs">
           <value>
             <PendingDiffInfo>

@@ -1,8 +1,5 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
-#if UNITY_6_0_OR_NEWER
-using UnityEngine.SceneManagement;
-#endif
 
 namespace JogosEmRede
 {
@@ -14,11 +11,8 @@ namespace JogosEmRede
     {
         void Awake()
         {
-            #if UNITY_6_0_OR_NEWER
+            // Usamos diretamente o FindObjectsByType com FindObjectsSortMode.None para evitar avisos de obsolescência
             EventSystem[] eventSystems = Object.FindObjectsByType<EventSystem>(FindObjectsSortMode.None);
-            #else
-            EventSystem[] eventSystems = Object.FindObjectsOfType<EventSystem>();
-            #endif
             
             if (eventSystems.Length > 1)
             {
@@ -41,5 +35,3 @@ namespace JogosEmRede
         }
     }
 }
-
-
