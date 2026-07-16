@@ -49,11 +49,6 @@ namespace JogosEmRede
             AtualizarSpriteVisual(valorNovo);
         }
 
-        private void AktualisarSpriteVisual(int batidas)
-        {
-            // Nota: Se houver algum erro de digitação no nome original, mantemos exatamente como estava às 10:50.
-        }
-
         private void AtualizarSpriteVisual(int batidas)
         {
             if (spritesRachadura != null && batidas < spritesRachadura.Length && batidas >= 0)
@@ -89,10 +84,16 @@ namespace JogosEmRede
 
             Debug.Log($"[Servidor] Bloco em ({gridX}, {gridY}) foi totalmente destruído!");
 
-            // Solicita ao GeradorDeTabuleiro que registre a destruição na matriz de física
+            // 1. Solicita ao GeradorDeTabuleiro que registre a destruição na matriz de física lógica
             if (GeradorDeTabuleiro.Instance != null)
             {
                 GeradorDeTabuleiro.Instance.ReportBlockDestroyed(gridX, gridY);
+            }
+
+            // 2. Remove fisicamente o bloco da rede de todas as máquinas conectadas
+            if (NetworkObject != null && NetworkObject.IsSpawned)
+            {
+                NetworkObject.Despawn(true);
             }
         }
     }
