@@ -58,6 +58,45 @@ namespace JogosEmRede
         }
 
         /// <summary>
+        /// Captura o clique do mouse no bloco (funciona tanto no Host quanto no Cliente)
+        /// </summary>
+        private void OnMouseDown()
+        {
+            // Envia uma requisição segura para o Servidor processar o dano, independente de quem seja o dono do bloco
+            RequisitarDanoRpc();
+        }
+
+        /// <summary>
+        /// O novo sistema [Rpc] substitui o ServerRpc obsoleto. 
+        /// SendTo.Server envia para o servidor, e InvokePermission.Everyone permite que o Cliente chame mesmo sem ser o dono.
+        /// NOTA: O Netcode exige que métodos [Rpc] obrigatoriamente terminem com o sufixo "Rpc" no nome.
+        /// </summary>
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+        private void RequisitarDanoRpc(RpcParams rpcParams = default)
+        {
+            // Validação opcional de Turno (Descomente as linhas abaixo se quiser validar se o jogador só joga no turno dele)
+            /*
+            ulong idDoJogadorQueClicou = rpcParams.Receive.SenderClientId;
+            int turnoDoJogador = (idDoJogadorQueClicou == NetworkManager.ServerClientId) ? 1 : 2;
+            
+            if (GeradorDeTabuleiro.Instance != null && GeradorDeTabuleiro.Instance.turnoAtual.Value != turnoDoJogador)
+            {
+                Debug.LogWarning($"[Servidor] Jogador {turnoDoJogador} tentou clicar fora do seu turno!");
+                return; 
+            }
+            */
+
+            // Executa o dano se passar nas validações
+            ReceberDano(1);
+
+            // Alterna o turno do jogo automaticamente após um clique válido acontecer
+            if (GeradorDeTabuleiro.Instance != null)
+            {
+                GeradorDeTabuleiro.Instance.AlternarTurno();
+            }
+        }
+
+        /// <summary>
         /// Aplica dano ao bloco. Roda com segurança apenas no Servidor.
         /// </summary>
         public void ReceberDano(int dano = 1)
