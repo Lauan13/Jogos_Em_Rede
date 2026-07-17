@@ -1,73 +1,77 @@
 using UnityEngine;
 using Unity.Netcode;
-using Unity.Netcode.Transports.UTP; // Importante para alterar o IP do UnityTransport
-using TMPro; // Importante para ler o Campo de IP do TextMeshPro
+using Unity.Netcode.Transports.UTP;
+using TMPro;
 
 namespace JogosEmRede
 {
     public class GerenciadorDeConexao : MonoBehaviour
     {
         [Header("Elementos de Interface")]
-        [SerializeField] private TMP_InputField campoIP; // Arraste o seu CampoIP aqui no Inspector
-        [SerializeField] private GameObject painelMenuInicial; // O painel que vamos esconder ao conectar
+        [SerializeField] private TMP_InputField campoIP;
+        [SerializeField] private GameObject painelMenuInicial;
 
         private UnityTransport transporteDeRede;
 
         private void Awake()
         {
-            // Busca o componente de transporte de rede que está junto ao NetworkManager
             if (NetworkManager.Singleton != null)
             {
                 transporteDeRede = NetworkManager.Singleton.GetComponent<UnityTransport>();
             }
         }
 
-        /// <summary>
-        /// Chamado pelo botão "Criar Sala (Host)"
-        /// </summary>
+        private void Start()
+        {
+            // Se inscreve nos eventos do Netcode para controlar o menu dinamicamente
+            if (NetworkManager.Singleton != null)
+            {
+                NetworkManager.Singleton.OnClientConnectedCallback += AoConectarSucesso;
+                NetworkManager.Singleton.OnClientDisconnectCallback += AoDesconectarOuFalhar;
+            }
+        }
+
+        private void OnDestroy()
+        {
+            if (NetworkManager.Singleton != null)
+            {
+                NetworkManager.Singleton.OnClientConnectedCallback -= AoConectarSucesso;
+                NetworkManager.Singleton.OnClientDisconnectCallback -= AoDesconectarOuFalhar;
+            }
+        }
+
         public void StartHost()
         {
-            // O Host sempre inicia localmente para abrir a sala na sua máquina
-            ConfigurarIP("127.0.0.1"); 
-            
+            ConfigurarIP("127.0.0.1");
+
             if (NetworkManager.Singleton != null && NetworkManager.Singleton.StartHost())
             {
+                // O Host inicia instantaneamente, então podemos esconder o menu direto
                 EsconderMenuInicial();
                 Debug.Log("[Rede] Host iniciado no endereço local: 127.0.0.1");
             }
         }
 
-        /// <summary>
-        /// Chamado pelo botão "Entrar (Client)"
-        /// </summary>
         public void StartClient()
         {
-            // Lê o que o jogador digitou no campo do TextMeshPro
             string ipDigitado = campoIP != null ? campoIP.text : "";
-
-            // REMOVE O VILÃO: Remove o caractere invisível de controle do TextMeshPro (\u200b) e os espaços extras
             ipDigitado = ipDigitado.Replace("\u200b", "").Trim();
 
-            // Se o campo estiver totalmente em branco, usa o IP padrão local (localhost)
             if (string.IsNullOrWhiteSpace(ipDigitado))
             {
                 ipDigitado = "127.0.0.1";
             }
 
-            Debug.Log($"[Cliente] Tentando conectar no IP: '{ipDigitado}'");
-
-            // Configura o IP de destino dinamicamente antes de conectar
+            Debug.Log($"[Cliente] Tentando conectar no IP: '{ipDigitado}'...");
             ConfigurarIP(ipDigitado);
 
-            if (NetworkManager.Singleton != null && NetworkManager.Singleton.StartClient())
+            if (NetworkManager.Singleton != null)
             {
-                EsconderMenuInicial();
+                NetworkManager.Singleton.StartClient();
+                // NOTA: Não escondemos o menu aqui! Vamos esperar o callback de sucesso.
             }
         }
 
-        /// <summary>
-        /// Chamado pelo botão de Server, caso queira rodar um servidor dedicado dedicado
-        /// </summary>
         public void StartServer()
         {
             if (NetworkManager.Singleton != null && NetworkManager.Singleton.StartServer())
@@ -76,41 +80,43 @@ namespace JogosEmRede
             }
         }
 
-        /// <summary>
-        /// Modifica o endereço de IP do componente de transporte do Netcode
-        /// </summary>
         private void ConfigurarIP(string enderecoIP)
         {
             if (transporteDeRede != null)
             {
-                // Aplica o IP de forma dinâmica no componente de rede
                 transporteDeRede.ConnectionData.Address = enderecoIP;
-                Debug.Log($"[Rede] IP de conexão alterado com sucesso para: {enderecoIP}");
+                Debug.Log($"[Rede] IP de conexão alterado para: {enderecoIP}");
             }
-            else
+        }
+
+        // Chamado automaticamente quando a conexão com o servidor dá certo
+        private void AoConectarSucesso(ulong clientId)
+        {
+            if (NetworkManager.Singleton.IsClient && clientId == NetworkManager.Singleton.LocalClientId)
             {
-                // Caso não tenha encontrado no Awake, tenta buscar novamente por segurança
-                if (NetworkManager.Singleton != null)
-                {
-                    transporteDeRede = NetworkManager.Singleton.GetComponent<UnityTransport>();
-                    if (transporteDeRede != null)
-                    {
-                        transporteDeRede.ConnectionData.Address = enderecoIP;
-                        Debug.Log($"[Rede] IP de conexão alterado (recuperado) para: {enderecoIP}");
-                        return;
-                    }
-                }
-                Debug.LogError("[Rede] Erro crítico: UnityTransport não foi encontrado no NetworkManager!");
+                Debug.Log("[Rede] Conectado ao servidor com sucesso!");
+                EsconderMenuInicial();
+            }
+        }
+
+        // Chamado se a conexão falhar (Timeout) ou se cair durante a partida
+        private void AoDesconectarOuFalhar(ulong clientId)
+        {
+            if (clientId == NetworkManager.Singleton.LocalClientId)
+            {
+                Debug.LogWarning("[Rede] Falha na conexão ou desconectado do servidor.");
+                MostrarMenuInicial();
             }
         }
 
         private void EsconderMenuInicial()
         {
-            // Esconde a interface do menu para que o tabuleiro gerado apareça limpo por trás
-            if (painelMenuInicial != null)
-            {
-                painelMenuInicial.SetActive(false);
-            }
+            if (painelMenuInicial != null) painelMenuInicial.SetActive(false);
+        }
+
+        private void MostrarMenuInicial()
+        {
+            if (painelMenuInicial != null) painelMenuInicial.SetActive(true);
         }
     }
 }
