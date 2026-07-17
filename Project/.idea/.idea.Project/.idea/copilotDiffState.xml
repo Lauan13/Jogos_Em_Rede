@@ -21,14 +21,6 @@
             </PendingDiffInfo>
           </value>
         </entry>
-        <entry key="$PROJECT_DIR$/Assets/Scripts/NetworkUI.cs">
-          <value>
-            <PendingDiffInfo>
-              <option name="filePath" value="$PROJECT_DIR$/Assets/Scripts/NetworkUI.cs" />
-              <option name="updatedContent" value="using UnityEngine;&#10;using Unity.Netcode;&#10;&#10;namespace JogosEmRede&#10;{&#10;    /// &lt;summary&gt;&#10;    /// Pequeno helper para iniciar Host/Client/Server a partir da UI.&#10;    /// Ligue os botões na cena para os métodos StartHost/StartClient/StartServer.&#10;    /// &lt;/summary&gt;&#10;    public class NetworkUI : MonoBehaviour&#10;    {&#10;        public void StartHost()&#10;        {&#10;            if (NetworkManager.Singleton != null)&#10;            {&#10;                NetworkManager.Singleton.StartHost();&#10;            }&#10;            else&#10;            {&#10;                Debug.LogWarning(&quot;NetworkManager.Singleton é nulo. Adicione um NetworkManager à cena.&quot;);&#10;            }&#10;        }&#10;&#10;        public void StartClient()&#10;        {&#10;            if (NetworkManager.Singleton != null)&#10;            {&#10;                NetworkManager.Singleton.StartClient();&#10;            }&#10;            else&#10;            {&#10;                Debug.LogWarning(&quot;NetworkManager.Singleton é nulo. Adicione um NetworkManager à cena.&quot;);&#10;            }&#10;        }&#10;&#10;        public void StartServer()&#10;        {&#10;            if (NetworkManager.Singleton != null)&#10;            {&#10;                NetworkManager.Singleton.StartServer();&#10;            }&#10;            else&#10;            {&#10;                Debug.LogWarning(&quot;NetworkManager.Singleton é nulo. Adicione um NetworkManager à cena.&quot;);&#10;            }&#10;        }&#10;    }&#10;}&#10;" />
-            </PendingDiffInfo>
-          </value>
-        </entry>
         <entry key="$PROJECT_DIR$/IMPLEMENTATION_SUMMARY.md">
           <value>
             <PendingDiffInfo>
