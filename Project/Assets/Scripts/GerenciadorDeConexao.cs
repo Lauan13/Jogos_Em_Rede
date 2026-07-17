@@ -133,5 +133,15 @@ namespace JogosEmRede
         {
             if (painelMenuInicial != null) painelMenuInicial.SetActive(true);
         }
+
+        // GARANTIA EXTRA: Fecha os sockets e libera a porta (ex: 7778) imediatamente ao sair do play ou fechar o jogo
+        private void OnApplicationQuit()
+        {
+            if (NetworkManager.Singleton != null)
+            {
+                NetworkManager.Singleton.Shutdown();
+                Debug.Log("[Rede] Conexões e portas encerradas com segurança ao fechar o aplicativo.");
+            }
+        }
     }
 }
