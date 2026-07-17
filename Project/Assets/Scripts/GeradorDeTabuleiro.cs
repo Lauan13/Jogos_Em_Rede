@@ -12,10 +12,11 @@ namespace JogosEmRede
         public int largura = 7;
         public int altura = 7;
         public GameObject blocoPrefab; 
-        public float espacamento = 1.1f; 
+        public float espacamento = 1.1f;
 
         [Header("Estado da Rede")]
-        public NetworkVariable<int> turnoAtual = new NetworkVariable<int>(1, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+        // Deixe assim, limpo. As permissões padrão já funcionam perfeitamente
+        public NetworkVariable<int> turnoAtual = new NetworkVariable<int>();
 
         public System.Action<int> OnTurnoAlterado;
         public System.Action<int> OnGameOver;
@@ -34,14 +35,30 @@ namespace JogosEmRede
         {
             base.OnNetworkSpawn();
 
-            // Inscreve a UI local na mudança do turno que vem da rede
-            turnoAtual.OnValueChanged += (oldVal, newVal) => OnTurnoAlterado?.Invoke(newVal);
+            // Remove qualquer inscrição antiga por segurança antes de adicionar
+            turnoAtual.OnValueChanged -= AtualizarTurnoLocal;
+            turnoAtual.OnValueChanged += AtualizarTurnoLocal;
 
             if (IsServer)
             {
+                // O Servidor define o turno inicial de rede aqui
+                turnoAtual.Value = 1;
                 GerarTabuleiroNoServidor();
+
+                // Dispara para a UI local do servidor atualizar
                 OnTurnoAlterado?.Invoke(turnoAtual.Value);
             }
+            else
+            {
+                // Se for cliente, pega o valor que já veio do servidor na conexão
+                OnTurnoAlterado?.Invoke(turnoAtual.Value);
+            }
+        }
+
+        // Criar um método separado facilita a limpeza de memória e evita bugs de encadeamento
+        private void AtualizarTurnoLocal(int oldVal, int newVal)
+        {
+            OnTurnoAlterado?.Invoke(newVal);
         }
 
         public override void OnNetworkDespawn()
@@ -49,9 +66,11 @@ namespace JogosEmRede
             base.OnNetworkDespawn();
             if (turnoAtual != null)
             {
-                turnoAtual.OnValueChanged -= (oldVal, newVal) => OnTurnoAlterado?.Invoke(newVal);
+                turnoAtual.OnValueChanged -= AtualizarTurnoLocal;
             }
         }
+
+        
 
         private void GerarTabuleiroNoServidor()
         {
