@@ -56,7 +56,11 @@ namespace JogosEmRede
 
         public void StartClient()
         {
-            LimparConexoesAtivas();
+            // FORÇADO: Garante o encerramento absoluto de qualquer escuta fantasma antes de tentar conectar
+            if (NetworkManager.Singleton != null)
+            {
+                NetworkManager.Singleton.Shutdown();
+            }
 
             string ipDigitado = campoIP != null ? campoIP.text : "";
             ipDigitado = ipDigitado.Replace("\u200b", "").Trim();
@@ -72,7 +76,6 @@ namespace JogosEmRede
             if (NetworkManager.Singleton != null)
             {
                 NetworkManager.Singleton.StartClient();
-                // O Menu NÃO é escondido aqui. Esperamos o evento 'AoConectarSucesso' dar o sinal verde!
             }
         }
 
