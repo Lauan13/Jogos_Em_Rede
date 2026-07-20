@@ -15,7 +15,7 @@ namespace JogosEmRede
         {
             if (!IsSpawned) return;
 
-            // Bloqueia o clique se não for a vez do jogador local
+            // 1. Trava local: Bloqueia a tentativa de clique se não for a vez do jogador local
             if (GeradorDeTabuleiro.Instance != null)
             {
                 int meuNumeroDeJogador = IsServer ? 1 : 2;
@@ -42,16 +42,24 @@ namespace JogosEmRede
 
             proximoCliquePermitido = Time.time + tempoDeEsperaEntreCliques;
 
-            // Envia para o servidor processar
+            // Envia a solicitação de clique para o servidor
             ProcessarCliqueNoServidorServerRpc(bloco.gridX, bloco.gridY);
         }
 
-        // Correção do aviso: Por padrão, no Netcode moderno, omitir parâmetros 
-        // ou usar apenas o atributo sem argumentos já é o suficiente e evita warnings.
         [ServerRpc]
-        private void ProcessarCliqueNoServidorServerRpc(int x, int y)
+        private void ProcessarCliqueNoServidorServerRpc(int x, int y, ServerRpcParams rpcParams = default)
         {
             if (GeradorDeTabuleiro.Instance == null) return;
+
+            // 2. Trava de segurança no Servidor: Garante que só o jogador do turno atual consiga pontuar
+            ulong idDoJogadorQueClicou = rpcParams.Receive.SenderClientId;
+            int turnoDoJogador = (idDoJogadorQueClicou == NetworkManager.ServerClientId) ? 1 : 2;
+
+            if (GeradorDeTabuleiro.Instance.turnoAtual.Value != turnoDoJogador)
+            {
+                Debug.LogWarning($"[Servidor] Jogador {turnoDoJogador} tentou clicar fora do seu turno!");
+                return;
+            }
 
             GameObject blocoObj = GeradorDeTabuleiro.Instance.GetBlock(x, y);
             if (blocoObj == null) return;
@@ -59,10 +67,10 @@ namespace JogosEmRede
             BlocoDeGelo bloco = blocoObj.GetComponent<BlocoDeGelo>();
             if (bloco == null) return;
 
-            // APLICAÇÃO DIRETA: Por enquanto, aplicando força fixa 1.
+            // Aplica 1 de dano
             bloco.ReceberDano(1);
 
-            // Muda o turno para o próximo jogador
+            // Alterna o turno
             GeradorDeTabuleiro.Instance.AlternarTurno();
         }
     }

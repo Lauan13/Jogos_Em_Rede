@@ -1327,7 +1327,7 @@ MonoBehaviour:
   m_DisconnectTimeoutMS: 30000
   ConnectionData:
     Address: 0.0.0.0
-    Port: 7779
+    Port: 7778
     WebSocketPath: /
     ServerListenAddress: 0.0.0.0
     ClientBindPort: 0
