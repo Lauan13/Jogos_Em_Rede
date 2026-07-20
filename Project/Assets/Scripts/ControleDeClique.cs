@@ -26,47 +26,38 @@ namespace JogosEmRede
             if (Time.time < proximoCliquePermitido) return;
             if (Mouse.current == null || !Mouse.current.leftButton.wasPressedThisFrame) return; 
             if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject()) return;
-            if (Camera.main == null)
-            {
-                Debug.LogError("[ControleDeClique] Nenhuma câmera com a Tag 'MainCamera' foi encontrada na cena!");
-                return;
-            }
+            if (Camera.main == null) return;
 
-            // --- CONVERSÃO DE POSIÇÃO 2D PRECISA ---
+            // --- CONVERSÃO DE POSIÇÃO 2D ---
             Vector2 screenPos = Mouse.current.position.ReadValue();
-            
-            // Usamos a distância Z real da câmera para não distorcer no espaço 2D
             float zDistance = Mathf.Abs(Camera.main.transform.position.z);
             Vector3 mouseWorld3 = Camera.main.ScreenToWorldPoint(new Vector3(screenPos.x, screenPos.y, zDistance));
             Vector2 mouseWorld2 = new Vector2(mouseWorld3.x, mouseWorld3.y);
 
-            // Busca o Collider do bloco sob a ponta do cursor
             Collider2D hitCollider = Physics2D.OverlapPoint(mouseWorld2);
-
-            // Fallback com Raycast 2D caso o OverlapPoint não encontre
             if (hitCollider == null)
             {
                 RaycastHit2D hit = Physics2D.Raycast(mouseWorld2, Vector2.zero);
                 hitCollider = hit.collider;
             }
 
-            // --- TESTE DE DIAGNÓSTICO (Olhar no Console do Unity/Build) ---
-            string nomeDoObjetoHit = hitCollider != null ? hitCollider.gameObject.name : "NENHUM";
-            Debug.Log($"[DIAGNÓSTICO] Posição Clicada no Mundo: {mouseWorld2} | Objeto Encontrado: {nomeDoObjetoHit}");
-
             if (hitCollider == null) return; 
 
             BlocoDeGelo bloco = hitCollider.GetComponent<BlocoDeGelo>();
             if (bloco == null || bloco.protegido) return; 
 
+            // Pega o componente NetworkObject do bloco clicado
+            NetworkObject targetNetworkObject = bloco.GetComponent<NetworkObject>();
+            if (targetNetworkObject == null) return;
+
             proximoCliquePermitido = Time.time + tempoDeEsperaEntreCliques;
 
-            // Envia a solicitação do bloco exato clicado para o servidor
-            ProcessarCliqueNoServidorRpc(bloco.gridX, bloco.gridY);
+            // Em vez de passar X e Y, passamos a referência DIRETA do objeto de rede clicado!
+            ProcessarCliqueNoServidorRpc(targetNetworkObject);
         }
 
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
-        private void ProcessarCliqueNoServidorRpc(int x, int y, RpcParams rpcParams = default)
+        private void ProcessarCliqueNoServidorRpc(NetworkObjectReference targetBlockRef, RpcParams rpcParams = default)
         {
             if (GeradorDeTabuleiro.Instance == null) return;
 
@@ -80,17 +71,19 @@ namespace JogosEmRede
                 return;
             }
 
-            GameObject blocoObj = GeradorDeTabuleiro.Instance.GetBlock(x, y);
-            if (blocoObj == null) return;
+            // Resolve a referência enviada pelo Cliente de volta para o objeto no Servidor
+            if (targetBlockRef.TryGet(out NetworkObject netObj))
+            {
+                BlocoDeGelo bloco = netObj.GetComponent<BlocoDeGelo>();
+                if (bloco != null)
+                {
+                    // Aplica o dano EXATAMENTE no bloco que o Cliente clicou
+                    bloco.ReceberDano(1);
 
-            BlocoDeGelo bloco = blocoObj.GetComponent<BlocoDeGelo>();
-            if (bloco == null) return;
-
-            // Aplica 1 de dano
-            bloco.ReceberDano(1);
-
-            // Alterna o turno
-            GeradorDeTabuleiro.Instance.AlternarTurno();
+                    // Alterna o turno
+                    GeradorDeTabuleiro.Instance.AlternarTurno();
+                }
+            }
         }
     }
 }
