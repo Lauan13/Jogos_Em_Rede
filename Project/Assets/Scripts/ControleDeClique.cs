@@ -43,15 +43,15 @@ namespace JogosEmRede
             proximoCliquePermitido = Time.time + tempoDeEsperaEntreCliques;
 
             // Envia a solicitação de clique para o servidor
-            ProcessarCliqueNoServidorServerRpc(bloco.gridX, bloco.gridY);
+            ProcessarCliqueNoServidorRpc(bloco.gridX, bloco.gridY);
         }
 
-        [ServerRpc]
-        private void ProcessarCliqueNoServidorServerRpc(int x, int y, ServerRpcParams rpcParams = default)
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+        private void ProcessarCliqueNoServidorRpc(int x, int y, RpcParams rpcParams = default)
         {
             if (GeradorDeTabuleiro.Instance == null) return;
 
-            // 2. Trava de segurança no Servidor: Garante que só o jogador do turno atual consiga pontuar
+            // Trava de segurança no Servidor
             ulong idDoJogadorQueClicou = rpcParams.Receive.SenderClientId;
             int turnoDoJogador = (idDoJogadorQueClicou == NetworkManager.ServerClientId) ? 1 : 2;
 
@@ -67,10 +67,10 @@ namespace JogosEmRede
             BlocoDeGelo bloco = blocoObj.GetComponent<BlocoDeGelo>();
             if (bloco == null) return;
 
-            // Aplica 1 de dano
+            // Aplica 1 de dano no bloco
             bloco.ReceberDano(1);
 
-            // Alterna o turno
+            // Alterna o turno para o próximo jogador
             GeradorDeTabuleiro.Instance.AlternarTurno();
         }
     }
