@@ -26,25 +26,33 @@ namespace JogosEmRede
             if (Time.time < proximoCliquePermitido) return;
             if (Mouse.current == null || !Mouse.current.leftButton.wasPressedThisFrame) return; 
             if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject()) return;
-            if (Camera.main == null) return;
+            if (Camera.main == null)
+            {
+                Debug.LogError("[ControleDeClique] Nenhuma câmera com a Tag 'MainCamera' foi encontrada na cena!");
+                return;
+            }
 
-            // --- CORREÇÃO DE POSIÇÃO DO CLIQUE 2D ---
+            // --- CONVERSÃO DE POSIÇÃO 2D PRECISA ---
             Vector2 screenPos = Mouse.current.position.ReadValue();
             
-            // Usamos -Camera.main.transform.position.z para alinhar com o plano Z=0 do tabuleiro 2D
-            float zDistance = -Camera.main.transform.position.z;
+            // Usamos a distância Z real da câmera para não distorcer no espaço 2D
+            float zDistance = Mathf.Abs(Camera.main.transform.position.z);
             Vector3 mouseWorld3 = Camera.main.ScreenToWorldPoint(new Vector3(screenPos.x, screenPos.y, zDistance));
             Vector2 mouseWorld2 = new Vector2(mouseWorld3.x, mouseWorld3.y);
 
-            // Tenta acertar o bloco diretamente sob a ponta do mouse
+            // Busca o Collider do bloco sob a ponta do cursor
             Collider2D hitCollider = Physics2D.OverlapPoint(mouseWorld2);
 
-            // Fallback caso seja um Raycast estrito
+            // Fallback com Raycast 2D caso o OverlapPoint não encontre
             if (hitCollider == null)
             {
                 RaycastHit2D hit = Physics2D.Raycast(mouseWorld2, Vector2.zero);
                 hitCollider = hit.collider;
             }
+
+            // --- TESTE DE DIAGNÓSTICO (Olhar no Console do Unity/Build) ---
+            string nomeDoObjetoHit = hitCollider != null ? hitCollider.gameObject.name : "NENHUM";
+            Debug.Log($"[DIAGNÓSTICO] Posição Clicada no Mundo: {mouseWorld2} | Objeto Encontrado: {nomeDoObjetoHit}");
 
             if (hitCollider == null) return; 
 
@@ -53,7 +61,7 @@ namespace JogosEmRede
 
             proximoCliquePermitido = Time.time + tempoDeEsperaEntreCliques;
 
-            // Envia a solicitação do bloco EXATO que foi clicado
+            // Envia a solicitação do bloco exato clicado para o servidor
             ProcessarCliqueNoServidorRpc(bloco.gridX, bloco.gridY);
         }
 
@@ -78,10 +86,10 @@ namespace JogosEmRede
             BlocoDeGelo bloco = blocoObj.GetComponent<BlocoDeGelo>();
             if (bloco == null) return;
 
-            // Aplica 1 de dano no bloco correto
+            // Aplica 1 de dano
             bloco.ReceberDano(1);
 
-            // Alterna o turno para o próximo jogador
+            // Alterna o turno
             GeradorDeTabuleiro.Instance.AlternarTurno();
         }
     }
