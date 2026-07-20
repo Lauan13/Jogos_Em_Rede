@@ -28,12 +28,23 @@ namespace JogosEmRede
             if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject()) return;
             if (Camera.main == null) return;
 
+            // --- CORREÇÃO DE POSIÇÃO DO CLIQUE 2D ---
             Vector2 screenPos = Mouse.current.position.ReadValue();
-            Vector3 mouseWorld3 = Camera.main.ScreenToWorldPoint(new Vector3(screenPos.x, screenPos.y, Camera.main.nearClipPlane));
+            
+            // Usamos -Camera.main.transform.position.z para alinhar com o plano Z=0 do tabuleiro 2D
+            float zDistance = -Camera.main.transform.position.z;
+            Vector3 mouseWorld3 = Camera.main.ScreenToWorldPoint(new Vector3(screenPos.x, screenPos.y, zDistance));
             Vector2 mouseWorld2 = new Vector2(mouseWorld3.x, mouseWorld3.y);
 
-            RaycastHit2D hit = Physics2D.Raycast(mouseWorld2, Vector2.zero);
-            Collider2D hitCollider = hit.collider != null ? hit.collider : Physics2D.OverlapPoint(mouseWorld2);
+            // Tenta acertar o bloco diretamente sob a ponta do mouse
+            Collider2D hitCollider = Physics2D.OverlapPoint(mouseWorld2);
+
+            // Fallback caso seja um Raycast estrito
+            if (hitCollider == null)
+            {
+                RaycastHit2D hit = Physics2D.Raycast(mouseWorld2, Vector2.zero);
+                hitCollider = hit.collider;
+            }
 
             if (hitCollider == null) return; 
 
@@ -42,7 +53,7 @@ namespace JogosEmRede
 
             proximoCliquePermitido = Time.time + tempoDeEsperaEntreCliques;
 
-            // Envia a solicitação de clique para o servidor
+            // Envia a solicitação do bloco EXATO que foi clicado
             ProcessarCliqueNoServidorRpc(bloco.gridX, bloco.gridY);
         }
 
@@ -67,7 +78,7 @@ namespace JogosEmRede
             BlocoDeGelo bloco = blocoObj.GetComponent<BlocoDeGelo>();
             if (bloco == null) return;
 
-            // Aplica 1 de dano no bloco
+            // Aplica 1 de dano no bloco correto
             bloco.ReceberDano(1);
 
             // Alterna o turno para o próximo jogador
